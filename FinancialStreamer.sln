@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinancialStreamer.Core", "FinancialStreamer.Core\FinancialStreamer.Core.csproj", "{265B7136-4B45-4C5B-997E-29370619A6E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinancialStreamer.Infrastructure", "FinancialStreamer.Infrastructure\FinancialStreamer.Infrastructure.csproj", "{4632A680-704F-4BE3-BF00-56343C6B4ACC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinancialStreamer.Api", "FinancialStreamer.Api\FinancialStreamer.Api.csproj", "{87802742-EB38-431B-A7EF-226C1D317E2E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinancialStreamer.WebSocket", "FinancialStreamer.WebSocket\FinancialStreamer.WebSocket.csproj", "{35D755ED-8EFC-40CD-99E8-8979FFFFA8B0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{265B7136-4B45-4C5B-997E-29370619A6E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{265B7136-4B45-4C5B-997E-29370619A6E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{265B7136-4B45-4C5B-997E-29370619A6E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{265B7136-4B45-4C5B-997E-29370619A6E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4632A680-704F-4BE3-BF00-56343C6B4ACC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4632A680-704F-4BE3-BF00-56343C6B4ACC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4632A680-704F-4BE3-BF00-56343C6B4ACC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4632A680-704F-4BE3-BF00-56343C6B4ACC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87802742-EB38-431B-A7EF-226C1D317E2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87802742-EB38-431B-A7EF-226C1D317E2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87802742-EB38-431B-A7EF-226C1D317E2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87802742-EB38-431B-A7EF-226C1D317E2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{35D755ED-8EFC-40CD-99E8-8979FFFFA8B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35D755ED-8EFC-40CD-99E8-8979FFFFA8B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35D755ED-8EFC-40CD-99E8-8979FFFFA8B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35D755ED-8EFC-40CD-99E8-8979FFFFA8B0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
