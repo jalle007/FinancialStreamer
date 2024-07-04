@@ -1,9 +1,25 @@
+using FinancialStreamer.Core.Interfaces;
+using FinancialStreamer.Infrastructure.Configurations;
+using FinancialStreamer.Infrastructure.Services;
+using Microsoft.AspNetCore.WebSockets;
+using FinancialStreamer.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
+
+// Add configuration
+builder.Services.Configure<TiingoSettings>(builder.Configuration.GetSection("Tiingo"));
+builder.Services.AddSingleton<IPriceDataProvider, TiingoPriceDataProvider>();
+builder.Services.AddSingleton<WebSocketHandler>();
+
+// Add WebSocket services
+builder.Services.AddWebSockets(options => { });
 
 var app = builder.Build();
 
@@ -16,29 +32,24 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
+// Configure WebSocket endpoint
+app.UseWebSockets();
+app.MapGet("/ws", async context =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    if (context.WebSockets.IsWebSocketRequest)
+    {
+        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+        var webSocketHandler = app.Services.GetRequiredService<WebSocketHandler>();
+        await webSocketHandler.HandleWebSocketAsync(webSocket);
+    }
+    else
+    {
+        context.Response.StatusCode = 400;
+    }
+});
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+app.MapControllers();
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+ 

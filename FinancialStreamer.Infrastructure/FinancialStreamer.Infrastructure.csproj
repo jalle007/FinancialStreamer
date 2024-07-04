@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Restless.Tiingo" Version="1.0.1" />
+    <PackageReference Include="Restless.Tiingo.Socket" Version="1.0.1" />
     <PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
   </ItemGroup>
 
