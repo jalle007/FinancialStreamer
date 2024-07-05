@@ -30,6 +30,7 @@ namespace FinancialStreamer.WebSocket
         /// <param name="webSocket">The WebSocket connection.</param>
         public async Task HandleWebSocketAsync(System.Net.WebSockets.WebSocket webSocket)
         {
+            _logger.LogInformation("WebSocket connection attempt received");
             try
             {
                 _logger.LogInformation("WebSocket connection established");

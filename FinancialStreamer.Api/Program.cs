@@ -1,10 +1,8 @@
 using FinancialStreamer.Core.Interfaces;
 using FinancialStreamer.Infrastructure.Configurations;
 using FinancialStreamer.Infrastructure.Services;
-using Microsoft.AspNetCore.WebSockets;
 using FinancialStreamer.WebSocket;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.WebSockets;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +21,9 @@ builder.Services.AddWebSockets(options => { });
 
 var app = builder.Build();
 
+//app.UseHttpsRedirection();
+//app.UseStaticFiles(); // **For Testing purposes Only **
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -30,12 +31,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+
+var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+var logger = loggerFactory.CreateLogger<Program>();
+
 
 // Configure WebSocket endpoint
 app.UseWebSockets();
 app.MapGet("/ws", async context =>
 {
+    logger.LogInformation("WebSocket route reached");
     if (context.WebSockets.IsWebSocketRequest)
     {
         var webSocket = await context.WebSockets.AcceptWebSocketAsync();
