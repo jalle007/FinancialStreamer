@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Financial Streamer Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif; /* Change to your preferred font */
+            line-height: 1.6;
+            margin: 20px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+
+        #rest-output, #ws-output {
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h2>Financial Streamer Test Page</h2>
+
+    <h3>REST API Calls</h3>
+    <button onclick="fetchInstruments()">Fetch Instruments</button>
+    <button onclick="fetchPrice('gbpsgd')">Fetch GBP/SGD Price</button>
+    <div id="rest-output"></div>
+
+    <h3>WebSocket</h3>
+    <button onclick="sendMessage('SUBSCRIBE')">Subscribe</button>
+    <button onclick="sendMessage('UNSUBSCRIBE')">Unsubscribe</button>
+    <div id="ws-output"></div>
+
+    <br />
+    <p>For Swagger check this <a href="https://localhost:7057/swagger/index.html" target="_blank">link</a></p>
+
+    <script>
+        // REST API Calls
+        async function fetchInstruments() {
+            try {
+                const response = await fetch('https://localhost:7057/api/Prices/instruments');
+                const data = await response.json();
+                console.log(data);
+                document.getElementById("rest-output").innerHTML += `${new Date().toLocaleTimeString()} - Instruments: ${JSON.stringify(data)}<br>`;
+            } catch (error) {
+                console.error('Error fetching instruments:', error);
+                document.getElementById("rest-output").innerHTML += `${new Date().toLocaleTimeString()} - Error fetching instruments: ${error.message}<br>`;
+            }
+        }
+
+        async function fetchPrice(symbol) {
+            try {
+                const response = await fetch(`https://localhost:7057/api/Prices/${symbol}`);
+                const data = await response.json();
+                console.log(data);
+                document.getElementById("rest-output").innerHTML += `${new Date().toLocaleTimeString()} - ${symbol} Price: ${JSON.stringify(data)}<br>`;
+            } catch (error) {
+                console.error(`Error fetching price for ${symbol}:`, error);
+                document.getElementById("rest-output").innerHTML += `${new Date().toLocaleTimeString()} - Error fetching price for ${symbol}: ${error.message}<br>`;
+            }
+        }
+
+        // WebSocket Section
+        let socket;
+        let subscribedSymbols = [];
+
+        function connectWebSocket() {
+            let wsUrl = window.location.protocol === 'https:'
+                ? 'wss://localhost:7057/ws'
+                : 'ws://localhost:7057/ws';
+
+            console.log(`Connecting to WebSocket at ${wsUrl}`);
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function (e) {
+                console.log("Connection established");
+                document.getElementById("ws-output").innerHTML += `${new Date().toLocaleTimeString()} - Connected<br>`;
+            };
+
+            socket.onmessage = function (event) {
+                console.log(`Data received from server: ${event.data}`);
+                document.getElementById("ws-output").innerHTML += `${new Date().toLocaleTimeString()} - Received: ${event.data}<br>`;
+            };
+
+            socket.onclose = function (event) {
+                if (event.wasClean) {
+                    console.log(`Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
+                    document.getElementById("ws-output").innerHTML += `${new Date().toLocaleTimeString()} - Connection closed cleanly<br>`;
+                } else {
+                    console.log(`Connection died: code=${event.code}, reason=${event.reason}`);
+                    document.getElementById("ws-output").innerHTML += `${new Date().toLocaleTimeString()} - Connection died: code=${event.code}, reason=${event.reason}<br>`;
+                }
+            };
+
+            socket.onerror = function (error) {
+                console.log(`WebSocket error: ${error.message}`);
+                document.getElementById("ws-output").innerHTML += `${new Date().toLocaleTimeString()} - WebSocket error: ${error.message}<br>`;
+            };
+        }
+
+        function sendMessage(method) {
+            if (method === 'SUBSCRIBE' && subscribedSymbols.length > 0) {
+                unsubscribeAll();
+            }
+
+            const message = JSON.stringify({
+                method: method,
+                params: ["usdbyn", "gbpsgd"]
+            });
+            socket.send(message);
+            console.log(`Sent: ${message}`);
+            document.getElementById("ws-output").innerHTML += `${new Date().toLocaleTimeString()} - Sent: ${message}<br>`;
+
+            if (method === 'SUBSCRIBE') {
+                subscribedSymbols = ["usdbyn", "gbpsgd"];
+            } else if (method === 'UNSUBSCRIBE') {
+                subscribedSymbols = [];
+            }
+        }
+
+        function unsubscribeAll() {
+            const message = JSON.stringify({
+                method: 'UNSUBSCRIBE',
+                params: subscribedSymbols
+            });
+            socket.send(message);
+            console.log(`Sent: ${message}`);
+            document.getElementById("ws-output").innerHTML += `${new Date().toLocaleTimeString()} - Sent: ${message}<br>`;
+        }
+
+        // Connect to the WebSocket server when the page loads
+        window.onload = connectWebSocket;
+    </script>
+</body>
+</html>

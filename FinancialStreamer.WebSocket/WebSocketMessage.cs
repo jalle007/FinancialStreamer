@@ -12,7 +12,7 @@ namespace FinancialStreamer.WebSocket
     public class WebSocketMessage
     {
         [JsonPropertyName("method")]
-        public string Method { get; set; }
+        public string Method { get; set; } = string.Empty;
 
         [JsonPropertyName("params")]
         public List<string>? Params { get; set; }

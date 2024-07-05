@@ -58,7 +58,6 @@ namespace FinancialStreamer.Infrastructure.Services
         /// <returns>A <see cref="PriceUpdate"/> containing the current price and timestamp.</returns>
         public async Task<PriceUpdate?> GetPriceAsync(string symbol)
         {
-            _logger.LogInformation($"Fetching price for {symbol}");
             var forexData = await _restClient.Forex.GetDataPointsAsync(new ForexParameters
             {
                 Tickers = new[] { new TickerPair(symbol.Substring(0, 3), symbol.Substring(3, 3)) },
@@ -86,40 +85,59 @@ namespace FinancialStreamer.Infrastructure.Services
         }
 
         /// <summary>
-        /// Subscribes to live price updates for a specific financial instrument.
+        /// Subscribes to live price updates for a specific financial instrument. 
         /// </summary>
         /// <param name="symbol">The symbol of the financial instrument.</param>
         /// <param name="onUpdate">The action to perform on each price update.</param>
         public async Task SubscribeToPriceUpdatesAsync(string symbol, Action<PriceUpdate> onUpdate)
         {
-            _logger.LogInformation($"Subscribing to price updates for {symbol}");
+            _logger.LogInformation($"[{DateTime.UtcNow}] Subscribing to price updates for {symbol}");
 
-            var cancellationTokenSource = new CancellationTokenSource();
-            _cancellationTokens[symbol] = cancellationTokenSource;
-
-            // Run the subscription on a separate task to handle updates
-            _ = Task.Run(async () =>
+            var cancellationTokenSource = _cancellationTokens.GetOrAdd(symbol, _ =>
             {
-                await _socketClient.Forex.GetAsync(new Restless.Tiingo.Socket.Core.ForexParameters
+                return new CancellationTokenSource();
+            });
+
+            if (_cancellationTokens[symbol].Token.IsCancellationRequested)
+            {
+                _logger.LogInformation($"[{DateTime.UtcNow}] CancellationToken for {symbol} was cancelled, creating a new one");
+                _cancellationTokens[symbol] = new CancellationTokenSource();
+            }
+
+            if (_cancellationTokens[symbol] == cancellationTokenSource)
+            {
+                await Task.Run(async () =>
                 {
-                    Tickers = new[] { symbol }
-                }, result =>
-                {
-                    if (result is ForexQuoteMessage quote)
+                    try
                     {
-                        var priceUpdate = new PriceUpdate
+                        await _socketClient.Forex.GetAsync(new Restless.Tiingo.Socket.Core.ForexParameters
                         {
-                            Symbol = quote.Ticker,
-                            Price = quote.MidPrice,
-                            Timestamp = quote.Timestamp
-                        };
+                            Tickers = new[] { symbol },
+                            Threshold = Restless.Tiingo.Socket.Core.ForexThreshold.LastQuote
+                        }, result =>
+                        {
+                            if (result is ForexQuoteMessage quote)
+                            {
+                                var priceUpdate = new PriceUpdate
+                                {
+                                    Symbol = quote.Ticker,
+                                    Price = quote.MidPrice,
+                                    Timestamp = quote.Timestamp
+                                };
 
-                        _logger.LogInformation($"Received price update for {symbol}: {priceUpdate.Price} at {priceUpdate.Timestamp}");
-                        onUpdate(priceUpdate);
+                                _logger.LogInformation($"[{DateTime.UtcNow}] Received price update for {symbol}: {priceUpdate.Price} at {priceUpdate.Timestamp}");
+                                onUpdate(priceUpdate);
+                            }
+                        });
+
+                        _logger.LogInformation($"[{DateTime.UtcNow}] Completed Forex.GetAsync for {symbol}");
                     }
-                });
-
-            }, cancellationTokenSource.Token);
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"[{DateTime.UtcNow}] Error during Forex.GetAsync for {symbol}");
+                    }
+                }, _cancellationTokens[symbol].Token);
+            }
         }
 
 
