@@ -1,3 +1,4 @@
+using FinancialStreamer.Api;
 using FinancialStreamer.Core.Interfaces;
 using FinancialStreamer.Infrastructure.Configurations;
 using FinancialStreamer.Infrastructure.Services;
@@ -21,8 +22,8 @@ builder.Services.AddWebSockets(options => { });
 
 var app = builder.Build();
 
-//app.UseHttpsRedirection();
-//app.UseStaticFiles(); // **For Testing purposes Only **
+// Use error handling middleware
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -31,16 +32,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
-var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-var logger = loggerFactory.CreateLogger<Program>();
-
+app.UseHttpsRedirection();
 
 // Configure WebSocket endpoint
 app.UseWebSockets();
 app.MapGet("/ws", async context =>
 {
-    logger.LogInformation("WebSocket route reached");
     if (context.WebSockets.IsWebSocketRequest)
     {
         var webSocket = await context.WebSockets.AcceptWebSocketAsync();

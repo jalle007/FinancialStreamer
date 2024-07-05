@@ -12,6 +12,18 @@ using System.Threading.Tasks;
 
 namespace FinancialStreamer.WebSocket
 {
+    /// <summary>
+    /// Handles WebSocket connections for subscribing to and broadcasting financial instrument price updates.
+    /// 
+    /// This class manages high traffic efficiently by:
+    /// 1. Using a ConcurrentDictionary to handle concurrent access to subscriber lists.
+    /// 2. Ensuring only one subscription per symbol to the data provider, regardless of the number of WebSocket clients.
+    /// 3. Broadcasting price updates to all WebSocket clients subscribed to the same symbol.
+    /// 4. Handling subscription and unsubscription requests from WebSocket clients.
+    /// 5. Managing cancellation tokens to properly handle unsubscriptions and stop receiving updates from the data provider when no clients are subscribed.
+    /// 
+    /// The class is designed to scale and handle a large number of WebSocket clients efficiently.
+    /// </summary>
     public class WebSocketHandler
     {
         private static readonly ConcurrentDictionary<string, List<System.Net.WebSockets.WebSocket>> _subscribers = new ConcurrentDictionary<string, List<System.Net.WebSockets.WebSocket>>();
@@ -30,7 +42,6 @@ namespace FinancialStreamer.WebSocket
         /// <param name="webSocket">The WebSocket connection.</param>
         public async Task HandleWebSocketAsync(System.Net.WebSockets.WebSocket webSocket)
         {
-            _logger.LogInformation("WebSocket connection attempt received");
             try
             {
                 _logger.LogInformation("WebSocket connection established");
@@ -56,7 +67,6 @@ namespace FinancialStreamer.WebSocket
                         var message = JsonSerializer.Deserialize<WebSocketMessage>(messageJson);
                         if (message != null)
                         {
-                            _logger.LogInformation($"Deserialized message: Method={message.Method}, Params={string.Join(",", message.Params ?? new List<string>())}");
                             await HandleMessageAsync(message, webSocket);
                         }
                         else
@@ -76,7 +86,6 @@ namespace FinancialStreamer.WebSocket
             }
             finally
             {
-                _logger.LogInformation("WebSocket connection handling completed");
             }
         }
 
@@ -87,11 +96,13 @@ namespace FinancialStreamer.WebSocket
         /// <param name="webSocket">The WebSocket connection.</param>
         private async Task HandleMessageAsync(WebSocketMessage message, System.Net.WebSockets.WebSocket webSocket)
         {
-            _logger.LogInformation($"Handling message: Method={message.Method}");
+            var paramsList = message.Params ?? new List<string>();
+
             if (message.Method.Equals("SUBSCRIBE", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogInformation($"Handling SUBSCRIBE message for params: {string.Join(", ", message.Params)}");
-                foreach (var symbol in message.Params ?? new List<string>())
+                _logger.LogInformation($"[{DateTime.UtcNow}] Handling SUBSCRIBE message for params: {string.Join(", ", paramsList)}");
+
+                foreach (var symbol in paramsList)
                 {
                     _logger.LogInformation($"Subscribing to {symbol}");
                     await AddSubscriberAsync(symbol, webSocket);
@@ -99,8 +110,8 @@ namespace FinancialStreamer.WebSocket
             }
             else if (message.Method.Equals("UNSUBSCRIBE", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogInformation($"Handling UNSUBSCRIBE message for params: {string.Join(", ", message.Params)}");
-                foreach (var symbol in message.Params ?? new List<string>())
+                _logger.LogInformation($"Handling UNSUBSCRIBE message for params: {string.Join(", ", paramsList)}");
+                foreach (var symbol in paramsList)
                 {
                     _logger.LogInformation($"Unsubscribing from {symbol}");
                     await RemoveSubscriberAsync(symbol, webSocket);
@@ -119,8 +130,6 @@ namespace FinancialStreamer.WebSocket
         /// <param name="webSocket">The WebSocket connection.</param>
         private async Task AddSubscriberAsync(string symbol, System.Net.WebSockets.WebSocket webSocket)
         {
-            _logger.LogInformation($"Attempting to add subscriber for {symbol}");
-
             // Optimization for handling many subscribers
             // Using ConcurrentDictionary to handle concurrent access to subscribers list
             _subscribers.AddOrUpdate(symbol,
@@ -134,13 +143,11 @@ namespace FinancialStreamer.WebSocket
                     return existingList;
                 });
 
-            _logger.LogInformation($"Added subscriber for {symbol}");
 
             if (_subscribers[symbol].Count == 1)
             {
                 // If this is the first subscriber for the symbol, subscribe to the data provider
-                _logger.LogInformation($"Creating new subscriber list for {symbol}");
-                _ = _priceDataProvider.SubscribeToPriceUpdatesAsync(symbol, async priceUpdate =>
+                await _priceDataProvider.SubscribeToPriceUpdatesAsync(symbol, async priceUpdate =>
                 {
                     await BroadcastPriceUpdateAsync(symbol, priceUpdate);
                 });

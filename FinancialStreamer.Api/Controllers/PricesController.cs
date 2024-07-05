@@ -25,6 +25,12 @@ namespace FinancialStreamer.Api.Controllers
         {
             _logger.LogInformation("Fetching list of available financial instruments");
             var instruments = await _priceDataProvider.GetInstrumentsAsync();
+            if (instruments == null)
+            {
+                _logger.LogWarning($"No data available");
+                return NotFound();
+            }
+
             return Ok(instruments);
         }
 
