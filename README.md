@@ -60,7 +60,7 @@ Financial Streamer is a service that provides REST API and WebSocket endpoints f
 
 
 4. **Access the Test Page and Swagger UI**
-   - Test Page: [https://localhost:7057/test_page.html](https://localhost:7057/test_page.html)
+   - Test Page: [http://localhost:8000/test_page.html](http://localhost:8000/test_page.html)
    - Swagger UI: [https://localhost:7057/swagger/index.html](https://localhost:7057/swagger/index.html)
 
 ### Usage
